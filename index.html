@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>說走就走 - 一日遊生成器</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+
+    <div class="app-background"></div>
+
+    <div class="app-container">
+        <header>
+            <h1>說走就走 🚀</h1>
+            <button id="auth-btn" class="icon-btn" aria-label="設定 API Key">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+            </button>
+        </header>
+
+        <section class="location-section glass-card">
+            <div class="location-icon">📍</div>
+            <div class="location-info">
+                <span class="label">目前位置</span>
+                <span id="current-location" class="value loading">正在定位中...</span>
+            </div>
+            <button id="refresh-loc-btn" class="icon-btn small">↻</button>
+        </section>
+
+        <form id="travel-form">
+            <section class="form-group glass-card">
+                <label for="transport">
+                    <span class="icon">🚗</span> 移動方式
+                </label>
+                <select id="transport" required>
+                    <option value="" disabled selected>請選擇...</option>
+                    <option value="走路">走路 (Walking)</option>
+                    <option value="開車">開車 (Car)</option>
+                    <option value="騎車">騎車 (Scooter)</option>
+                    <option value="腳踏車">腳踏車 (Bicycle)</option>
+                    <option value="大眾運輸">大眾運輸 (Public Transport)</option>
+                </select>
+            </section>
+
+            <section class="form-group glass-card">
+                <label>
+                    <span class="icon">⏰</span> 時間安排
+                </label>
+                <div class="time-range">
+                    <input type="time" id="start-time" value="09:00" required>
+                    <span class="separator">至</span>
+                    <input type="time" id="end-time" value="18:00" required>
+                </div>
+            </section>
+
+            <section class="form-group glass-card">
+                <label for="preferences">
+                    <span class="icon">❤️</span> 旅遊喜好
+                </label>
+                <input type="text" id="preferences" placeholder="例如：美食、看海、文青景點..." required>
+            </section>
+
+            <section class="form-group glass-card">
+                <label for="companions">
+                    <span class="icon">👥</span> 輔助資訊 (同行者等)
+                </label>
+                <input type="text" id="companions" placeholder="例如：有6歲小孩、帶狗、需無障礙...">
+            </section>
+
+            <button type="submit" class="cta-button">
+                旅 遊 吧 ! 🎒
+            </button>
+        </form>
+
+        <div id="result-area" class="result-section glass-card hidden">
+            <div class="result-header">
+                <h3>為您推薦的行程</h3>
+                <div class="header-actions">
+                    <!-- Buttons moved to bottom/actions area usually, but keep copy here or remove -->
+                </div>
+            </div>
+
+            <!-- Capture Area Start -->
+            <div id="capture-target" class="capture-container">
+                <div id="result-content" class="markdown-body">
+                    <!-- AI Content will go here -->
+                </div>
+                <div class="watermark">Designed by 說走就走 APP 🍌</div>
+            </div>
+            <!-- Capture Area End -->
+
+            <div id="loading-indicator" class="hidden">
+                <div class="spinner"></div>
+                <p>正在規劃行程中...</p>
+            </div>
+
+            <div id="result-actions" class="action-buttons-row hidden">
+                <button id="regenerate-btn" class="secondary-btn">🔄 重新安排 (不重複)</button>
+                <button id="download-btn" class="secondary-btn">📷 下載成圖片</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <h2>設定 API Key</h2>
+            <p>本服務使用 Google Gemini AI，請輸入您的 API Key 以開始使用。</p>
+
+            <div class="steps">
+                <div class="step">
+                    <span class="step-num">1</span>
+                    <p>前往 <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></p>
+                </div>
+                <div class="step">
+                    <span class="step-num">2</span>
+                    <p>點擊 "Create API Key"</p>
+                </div>
+                <div class="step">
+                    <span class="step-num">3</span>
+                    <p>複製 Key 並貼在下方</p>
+                </div>
+                <small class="note">(不用擔心，Key 只會存在您的瀏覽器中，不會上傳到我們的伺服器)</small>
+            </div>
+
+            <input type="password" id="api-key-input" placeholder="貼上您的 API Key">
+            <div class="modal-actions">
+                <button id="save-key-btn" class="primary-btn">儲存並開始</button>
+                <button id="close-modal-btn" class="text-btn">取消</button>
+            </div>
+            <div style="text-align: center; margin-top: 10px;">
+                <button id="clear-key-btn" class="text-btn" style="color: #ff5e62; font-size: 0.8rem;">清除這台電腦的
+                    Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
