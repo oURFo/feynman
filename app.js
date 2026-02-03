@@ -50,9 +50,11 @@ const app = {
             },
             (error) => {
                 console.error('Location error:', error);
-                locDisplay.textContent = '無法取得位置';
+                locDisplay.textContent = '無法取得位置 (請確認權限)';
                 locDisplay.classList.remove('loading');
-            }
+                alert('定位失敗，請確認您的瀏覽器已允許位置存取，或確保有網路連線。');
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     },
 
@@ -177,46 +179,45 @@ const app = {
         });
 
         container.appendChild(list);
-
-
+    },
 
     // ... callGeminiApi (with auto detect) ...
     async callGeminiApi(prompt) {
-            let validModel = await this.findValidModel();
-            if (!validModel) validModel = 'gemini-pro';
-            return await this.tryModel(validModel, prompt);
-        },
+        let validModel = await this.findValidModel();
+        if (!validModel) validModel = 'gemini-pro';
+        return await this.tryModel(validModel, prompt);
+    },
 
     async findValidModel() {
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
-                const data = await response.json();
-                const m = data.models?.find(m => m.supportedGenerationMethods?.includes('generateContent') && !m.name.includes('vision')); // prefer text models
-                return m ? m.name.replace('models/', '') : null;
-            } catch (e) { return null; }
-        },
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+            const data = await response.json();
+            const m = data.models?.find(m => m.supportedGenerationMethods?.includes('generateContent') && !m.name.includes('vision')); // prefer text models
+            return m ? m.name.replace('models/', '') : null;
+        } catch (e) { return null; }
+    },
 
     async tryModel(model, prompt) {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
-        },
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    },
 
-        downloadImage() {
-            const target = document.getElementById('capture-target');
-            document.querySelector('.watermark').style.display = 'block';
-            html2canvas(target, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
-                document.querySelector('.watermark').style.display = 'none';
-                const link = document.createElement('a');
-                link.download = `行程_${Date.now()}.jpg`;
-                link.href = canvas.toDataURL();
-                link.click();
-            });
-        }
-    };
+    downloadImage() {
+        const target = document.getElementById('capture-target');
+        document.querySelector('.watermark').style.display = 'block';
+        html2canvas(target, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+            document.querySelector('.watermark').style.display = 'none';
+            const link = document.createElement('a');
+            link.download = `行程_${Date.now()}.jpg`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+};
 
-    document.addEventListener('DOMContentLoaded', () => app.init());
+document.addEventListener('DOMContentLoaded', () => app.init());
