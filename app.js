@@ -167,7 +167,6 @@ const app = {
                 <div class="card-content">
                     <div class="card-header">
                         <h3>${item.name}</h3>
-                        <button class="icon-btn small refresh-spot-btn" data-index="${index}" title="更換這個景點">🔄</button>
                     </div>
                     <p class="card-address">📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + ' ' + item.address)}" target="_blank">${item.address}</a></p>
                     <p class="card-desc">${item.desc}</p>
@@ -179,92 +178,45 @@ const app = {
 
         container.appendChild(list);
 
-        // Bind refresh buttons
-        container.querySelectorAll('.refresh-spot-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.refreshSpot(parseInt(e.currentTarget.dataset.index)));
-        });
-    },
 
-    async refreshSpot(index) {
-        if (!confirm('要更換這個景點嗎？')) return;
-
-        const oldItem = this.currentItinerary.items[index];
-        const prevItem = index > 0 ? this.currentItinerary.items[index - 1] : { name: "出發點" };
-        const nextItem = index < this.currentItinerary.items.length - 1 ? this.currentItinerary.items[index + 1] : null;
-
-        const btn = document.querySelector(`.refresh-spot-btn[data-index="${index}"]`);
-        btn.classList.add('spinning'); // Add CSS animation
-
-        const prompt = `
-請幫我將行程中的這個景點：「${oldItem.name}」更換成另一個不同的地點。
-【上下文】
-前一站：${prevItem.name}
-後一站：${nextItem ? nextItem.name : "結束"}
-區域：${this.location.display}
-時間：${oldItem.time}
-喜好：${document.getElementById('preferences').value}
-
-【規則】
-1. 不要推薦 ${oldItem.name}。
-2. 保持時間與動線順暢。
-3. 輸出單一 JSON 物件：
-{
-  "time": "${oldItem.time}",
-  "name": "新景點名稱",
-  "address": "地址",
-  "desc": "簡介",
-  "traffic": "交通資訊"
-}
-`;
-        try {
-            const result = await this.callGeminiApi(prompt);
-            const jsonStr = result.replace(/```json/g, '').replace(/```/g, '').trim();
-            const newItem = JSON.parse(jsonStr);
-
-            this.currentItinerary.items[index] = newItem;
-            this.renderItinerary(this.currentItinerary);
-        } catch (e) {
-            alert('更換失敗，請重試');
-        }
-    },
 
     // ... callGeminiApi (with auto detect) ...
     async callGeminiApi(prompt) {
-        let validModel = await this.findValidModel();
-        if (!validModel) validModel = 'gemini-pro';
-        return await this.tryModel(validModel, prompt);
-    },
+            let validModel = await this.findValidModel();
+            if (!validModel) validModel = 'gemini-pro';
+            return await this.tryModel(validModel, prompt);
+        },
 
     async findValidModel() {
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
-            const data = await response.json();
-            const m = data.models?.find(m => m.supportedGenerationMethods?.includes('generateContent') && !m.name.includes('vision')); // prefer text models
-            return m ? m.name.replace('models/', '') : null;
-        } catch (e) { return null; }
-    },
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+                const data = await response.json();
+                const m = data.models?.find(m => m.supportedGenerationMethods?.includes('generateContent') && !m.name.includes('vision')); // prefer text models
+                return m ? m.name.replace('models/', '') : null;
+            } catch (e) { return null; }
+        },
 
     async tryModel(model, prompt) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
-    },
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        },
 
-    downloadImage() {
-        const target = document.getElementById('capture-target');
-        document.querySelector('.watermark').style.display = 'block';
-        html2canvas(target, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
-            document.querySelector('.watermark').style.display = 'none';
-            const link = document.createElement('a');
-            link.download = `行程_${Date.now()}.jpg`;
-            link.href = canvas.toDataURL();
-            link.click();
-        });
-    }
-};
+        downloadImage() {
+            const target = document.getElementById('capture-target');
+            document.querySelector('.watermark').style.display = 'block';
+            html2canvas(target, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+                document.querySelector('.watermark').style.display = 'none';
+                const link = document.createElement('a');
+                link.download = `行程_${Date.now()}.jpg`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    };
 
-document.addEventListener('DOMContentLoaded', () => app.init());
+    document.addEventListener('DOMContentLoaded', () => app.init());
